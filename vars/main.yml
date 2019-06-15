@@ -1,2 +1,29 @@
 ---
 # vars file for ansible-role-forman
+
+foreman_db_options:
+  foreman-db-manage: "{{ foreman_db_manage | bool | lower }}"
+  foreman-db-type: "{{ foreman_db_type }}"
+  foreman-db-host: "{{ foreman_db_host }}"
+  foreman-db-database: "{{ foreman_db_database }}"
+  foreman-db-username: "{{ foreman_db_username }}"
+  foreman-db-password: "{{ foreman_db_password }}"
+
+foreman_auth_params:
+ - "--foreman-initial-admin-username={{ foreman_admin_username }}"
+ - "--foreman-initial-admin-password={{ foreman_admin_password }}"
+
+foreman_auth_params_old:
+ - "--foreman-admin-username={{ foreman_admin_username }}"
+ - "--foreman-admin-password={{ foreman_admin_password }}"
+
+foreman_no_puppet_options:
+  puppet-server: "false"
+  foreman-proxy-puppet: "false"
+  foreman-proxy-puppetca: "false"
+
+foreman_puppet_options:
+ - "enable-foreman"
+ - "enable-puppet"
+ - "enable-foreman-cli"
+ - "enable-foreman-proxy"

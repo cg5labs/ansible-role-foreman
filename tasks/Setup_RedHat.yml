@@ -1,4 +1,18 @@
 ---
+- name: "Foreman Puppet disabled Options"
+  debug:
+    msg: "No Puppet options {{ foreman_no_puppet_options }}"
+  when: disable_puppet
+
+- name: "Foreman Puppet Options"
+  debug:
+    msg: "{{ foreman_puppet_options }}"
+  when: not disable_puppet
+
+- name: "Foreman cmd options"
+  debug:
+    msg: "{{ foreman_cmd_options }}"
+
 - name: Set hostname as fqdn
   hostname: name={{ foreman_hostname }}
   when: foreman_hostname is defined
@@ -44,6 +58,12 @@
     - name: "Disable FirewallD"
       service: name=firewalld state=stopped enabled=no
       ignore_errors: true
+      when: disable_firewalld
+
+    - name: Put SELinux in permissive or enforcing mode
+      selinux:
+       policy: targeted
+       state: "{{ selinux_state }}"
 
     - name: "install Puppet Repo"
       yum:
@@ -69,34 +89,24 @@
     - name: "Install Foreman without Puppet"
       command: >
         foreman-installer
-        --foreman-unattended=true
-        --foreman-db-manage={{ foreman_db_manage | bool | lower }}
-        --foreman-db-type={{ foreman_db_type }}
-        --foreman-db-host={{ foreman_db_host }}
-        --foreman-db-database={{ foreman_db_database }}
-        --foreman-db-username={{ foreman_db_username }}
-        --foreman-db-password={{ foreman_db_password }}
-        --foreman-admin-username={{ foreman_admin_username }}
-        --foreman-admin-password={{ foreman_admin_password }}
-        --puppet-server=false --foreman-proxy-puppet=false --foreman-proxy-puppetca=false
         {{ foreman_cmd_options | join (' ') }}
   when: disable_puppet
+
+#- name: "Generate Puppet SSL cert for {{ ansible_fqdn }}"
+#  command: "/opt/puppetlabs/bin/puppet cert generate {{ ansible_fqdn }}"
+#  args:
+#    creates: "/etc/puppetlabs/puppet/ssl/certs/{{ ansible_fqdn }}.pem"
+#  when: not disable_puppet
+  #when: not disable_puppet and foreman_version | float >= 1.21
 
 - name: "Install and Configure Foreman with Puppet"
   block:
     - name: "Install Foreman with Puppet"
-      command: >
-        foreman-installer
-        --foreman-unattended=true
-        --enable-foreman --enable-foreman-cli --enable-foreman-proxy
-        --foreman-db-manage={{ foreman_db_manage | bool | lower }}
-        --foreman-db-type={{ foreman_db_type }}
-        --foreman-db-database={{ foreman_db_database }}
-        --foreman-db-username={{ foreman_db_username }}
-        --foreman-db-password={{ foreman_db_password }}
-        --foreman-admin-username={{ foreman_admin_username }}
-        --foreman-admin-password={{ foreman_admin_password }}
-        {{ foreman_cmd_options | join (' ') }}
+      command: "foreman-installer {{ foreman_cmd_options | join (' ') }}"
+
+    - name: "Run of puppet agent (Registering VM in Foreman)"
+      puppet: timeout=30
+
   when: not disable_puppet
 
 - name: "Install and Configure PuppetDB"
@@ -143,9 +153,6 @@
         user: "{{ foreman_admin_username }}"
         password: "{{ foreman_admin_password }}"
         method: POST
-        #headers: 
-        #body: '{"puppetclass_id": 34}'
-        #    body: "{{ lookup('file','issue.json') }}"
         body: >
           {"puppetclass_id": 34}
         force_basic_auth: yes

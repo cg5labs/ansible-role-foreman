@@ -1,0 +1,74 @@
+---
+# Install Flags
+
+- name: "Configure Foreman Installer flags: foreman-unattended"
+  set_fact:
+    foreman_cmd_options: "{{ foreman_cmd_options }} + [ '--foreman-unattended=true' ]"
+
+- name: "Check for disable_puppet value"
+  set_fact:
+    disable_puppet: "{{ disable_puppet == True }}"
+
+- name: "Configure Foreman Installer flags: Puppet Disabled"
+  set_fact:
+    foreman_cmd_options: "{{ foreman_cmd_options }} + [ '--{{ item.key }}={{ item.value }}' ]"
+  with_dict: "{{ foreman_no_puppet_options | default({}) }}" 
+  when: disable_puppet
+
+- name: "Configure Foreman Installer flags: Puppet Enabled"
+  set_fact:
+    foreman_cmd_options: "{{ foreman_cmd_options }} + [ '--{{ item }}' ]"
+  with_items: "{{ foreman_puppet_options | default([]) }}" 
+  when: not disable_puppet 
+
+- name: "Configure Foreman Installer flags: db"
+  set_fact:
+    foreman_cmd_options: "{{ foreman_cmd_options }}  +  [ '--{{ item.key }}={{ item.value }}' ]"
+  with_dict: "{{ foreman_db_options | default({}) }}"
+
+- name: "Configure Foreman Installer flags: Authentication (before Foreman 1.21)"
+  set_fact:
+    foreman_cmd_options: "{{ foreman_cmd_options }} + [ '{{ item }}' ]"
+  with_items: "{{ foreman_auth_params_old | default([]) }}" 
+  when: foreman_version | float < 1.21
+
+- name: "Configure Foreman Installer flags: Authentication (Foreman 1.21 or newer)"
+  set_fact:
+    foreman_cmd_options: "{{ foreman_cmd_options }} + [ '{{ item }}' ]"
+  with_items: "{{ foreman_auth_params | default([]) }}" 
+  when: foreman_version | float >= 1.21
+
+
+
+
+  ### when: foreman_version == "1.21"
+  ###
+  #    - name: "Install Foreman without Puppet"
+  #    command: >
+  #      foreman-installer
+  #      --foreman-unattended=true
+  #      --foreman-db-manage={{ foreman_db_manage | bool | lower }}
+  #      --foreman-db-type={{ foreman_db_type }}
+  #      --foreman-db-host={{ foreman_db_host }}
+  #      --foreman-db-database={{ foreman_db_database }}
+  #      --foreman-db-username={{ foreman_db_username }}
+  #      --foreman-db-password={{ foreman_db_password }}
+  #      --foreman-admin-username={{ foreman_admin_username }}
+  #      --foreman-admin-password={{ foreman_admin_password }}
+  #      --puppet-server=false --foreman-proxy-puppet=false --foreman-proxy-puppetca=false
+
+   ### with puppet
+
+  #    command: >
+  #      foreman-installer
+  #      --foreman-unattended=true
+  #      --enable-foreman --enable-foreman-cli --enable-foreman-proxy
+  #      --foreman-db-manage={{ foreman_db_manage | bool | lower }}
+  #      --foreman-db-type={{ foreman_db_type }}
+  #      --foreman-db-database={{ foreman_db_database }}
+  #      --foreman-db-username={{ foreman_db_username }}
+  #      --foreman-db-password={{ foreman_db_password }}
+  #      --foreman-initial-admin-username={{ foreman_admin_username }}
+  #      --foreman-initial-admin-password={{ foreman_admin_password }}
+  #      {{ foreman_cmd_options | join (' ') }}
+  #when: not disable_puppet

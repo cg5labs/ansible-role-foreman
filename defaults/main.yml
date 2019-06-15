@@ -13,6 +13,11 @@ foreman_db_database: foremandb
 foreman_db_username: foreman
 foreman_db_password: dbpassword
 
+# System config (RHEL/CentOS)
+disable_firewalld: True
+# set to "permissive" or "enforcing"
+selinux_state: "enforcing"
+
 # Puppet config.
 disable_puppet: False
 puppet_version: puppet5
@@ -25,6 +30,12 @@ enable_puppetdb: False
 foreman_plugins: []
 foreman_proxy_plugins: []
 foreman_compute: []
+
+# Installer parameters
+foreman_installer_params: {}
+foreman_db_options: {}
+foreman_no_puppet_options: {}
+foreman_puppet_options: []
 
 # Options.
 foreman_options: {}
